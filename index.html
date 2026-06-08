@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Controle da Obra</title>
+<title>GESTÃO DA OBRA</title>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -22,6 +22,34 @@
 body{
     background:#f4f6f8;
     color:#111827;
+}
+
+.login-screen{
+    min-height:100vh;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:20px;
+    background:linear-gradient(135deg,#111827,#1f2937);
+}
+
+.login-box{
+    width:100%;
+    max-width:420px;
+    background:white;
+    padding:30px;
+    border-radius:24px;
+    box-shadow:0 20px 50px rgba(0,0,0,.25);
+}
+
+.login-box h1{
+    margin-bottom:8px;
+    font-size:26px;
+}
+
+.login-box p{
+    color:#6b7280;
+    margin-bottom:20px;
 }
 
 .header{
@@ -43,9 +71,10 @@ body{
     font-size:28px;
 }
 
-.header p{
-    color:#d1d5db;
-    margin-top:5px;
+.btn-sair{
+    background:#dc2626;
+    color:white;
+    padding:12px 18px;
 }
 
 .container{
@@ -73,7 +102,6 @@ body{
     color:#6b7280;
     font-size:14px;
     font-weight:600;
-    text-transform:uppercase;
 }
 
 .valor-principal{
@@ -81,14 +109,6 @@ body{
     font-weight:800;
     color:#16a34a;
     margin-top:10px;
-}
-
-.badge{
-    background:#ecfdf5;
-    color:#16a34a;
-    padding:10px 14px;
-    border-radius:999px;
-    font-weight:700;
 }
 
 .grid{
@@ -244,12 +264,6 @@ button{
     white-space:nowrap;
 }
 
-.info{
-    color:#6b7280;
-    font-size:14px;
-    margin-top:6px;
-}
-
 .detalhes{
     display:grid;
     grid-template-columns:repeat(3,1fr);
@@ -357,6 +371,25 @@ canvas{
     color:white;
 }
 
+h1,
+h2,
+h3,
+label,
+button,
+.produto,
+.tag,
+.detalhe-card span,
+.detalhe-card strong,
+.total,
+.valor-principal{
+    text-transform:uppercase;
+    letter-spacing:.5px;
+}
+
+#app{
+    display:none;
+}
+
 @media(max-width:900px){
     .grid{
         grid-template-columns:1fr;
@@ -400,18 +433,43 @@ canvas{
     .total{
         font-size:18px;
     }
+
+    .btn-sair{
+        width:100%;
+    }
 }
 </style>
 </head>
 
 <body>
 
+<div id="loginScreen" class="login-screen">
+    <div class="login-box">
+        <h1></h1>
+
+        <div class="campo">
+            <label>E-mail</label>
+            <input id="emailLogin" type="email">
+        </div>
+
+        <div class="campo">
+            <label>Senha</label>
+            <input id="senhaLogin" type="password">
+        </div>
+
+        <button class="btn-salvar" onclick="entrar()">ENTRAR</button>
+    </div>
+</div>
+
+<div id="app">
+
 <div class="header">
     <div class="header-content">
         <div>
-            <h1>🏗 Controle da Obra</h1>
-            
+            <h1>GESTÃO DA OBRA</h1>
         </div>
+
+        <button class="btn-sair" onclick="sair()">SAIR</button>
     </div>
 </div>
 
@@ -419,7 +477,7 @@ canvas{
 
 <div class="dashboard">
     <div class="card">
-        <h3>Total investido na obra</h3>
+        <h3>TOTAL INVESTIDO</h3>
         <div class="valor-principal" id="totalGeral">R$ 0,00</div>
     </div>
 </div>
@@ -427,7 +485,7 @@ canvas{
 <div class="grid">
 
 <div class="box">
-<h2>➕ Novo Gasto</h2>
+<h2>➕ NOVO LANÇAMENTO</h2>
 
 <div class="campo">
     <label>Produto / Serviço</label>
@@ -465,22 +523,22 @@ canvas{
 </div>
 
 <div class="total-preview">
-    <span>Total do item</span>
+    <span>TOTAL DO ITEM</span>
     <strong id="totalItem">R$ 0,00</strong>
 </div>
 
-<button class="btn-salvar" onclick="salvarGasto()">Salvar Gasto</button>
+<button class="btn-salvar" onclick="salvarGasto()">SALVAR GASTO</button>
 </div>
 
 <div>
     <div class="box">
-        <h2>📊 Gráfico</h2>
+        <h2>📊 DISTRIBUIÇÃO DOS GASTOS</h2>
         <canvas id="grafico"></canvas>
     </div>
 
     <div class="box">
         <div class="admin">
-            <h2>📋 Gastos</h2>
+            <h2>📋 HISTÓRICO DE GASTOS</h2>
             <label>
                 <input type="checkbox" id="modoEdicao">
                 Modo edição
@@ -493,9 +551,11 @@ canvas{
 </div>
 </div>
 
+</div>
+
 <div class="modal" id="modalEditar">
     <div class="modal-content">
-        <h2>✏️ Editar Gasto</h2>
+        <h2>✏️ EDITAR GASTO</h2>
 
         <input type="hidden" id="editId">
 
@@ -532,15 +592,15 @@ canvas{
         </div>
 
         <div class="modal-actions">
-            <button class="btn-cancelar" onclick="fecharModal()">Cancelar</button>
-            <button class="btn-atualizar" onclick="atualizarGasto()">Salvar Alteração</button>
+            <button class="btn-cancelar" onclick="fecharModal()">CANCELAR</button>
+            <button class="btn-atualizar" onclick="atualizarGasto()">SALVAR ALTERAÇÃO</button>
         </div>
     </div>
 </div>
 
 <div class="modal" id="modalCategoria">
     <div class="modal-content">
-        <h2>➕ Criar Categoria</h2>
+        <h2>➕ CRIAR CATEGORIA</h2>
 
         <div class="campo">
             <label>Nome da categoria</label>
@@ -548,22 +608,65 @@ canvas{
         </div>
 
         <div class="modal-actions">
-            <button class="btn-cancelar" onclick="fecharModalCategoria()">Cancelar</button>
-            <button class="btn-atualizar" onclick="criarCategoria()">Criar</button>
+            <button class="btn-cancelar" onclick="fecharModalCategoria()">CANCELAR</button>
+            <button class="btn-atualizar" onclick="criarCategoria()">CRIAR</button>
         </div>
     </div>
 </div>
 
 <script>
 const supabaseUrl = "https://sncqakvwubhlckncuuea.supabase.co";
-
 const supabaseKey = "sb_publishable_4oEt-DgvoHZIlzwhlppjkQ_3NuY-UBn";
-
 const banco = window.supabase.createClient(supabaseUrl, supabaseKey);
 
 let grafico;
 let gastosAtuais = [];
 let categoriasAtuais = [];
+
+async function verificarSessao(){
+    const { data } = await banco.auth.getSession();
+
+    if(data.session){
+        document.getElementById("loginScreen").style.display = "none";
+        document.getElementById("app").style.display = "block";
+        await iniciar();
+    }else{
+        document.getElementById("loginScreen").style.display = "flex";
+        document.getElementById("app").style.display = "none";
+    }
+}
+
+async function entrar(){
+    const email = document.getElementById("emailLogin").value;
+    const senha = document.getElementById("senhaLogin").value;
+
+    if(!email || !senha){
+        alert("Digite e-mail e senha.");
+        return;
+    }
+
+    const { error } = await banco.auth.signInWithPassword({
+        email: email,
+        password: senha
+    });
+
+    if(error){
+        alert("Erro ao entrar: " + error.message);
+        return;
+    }
+
+    verificarSessao();
+}
+
+async function sair(){
+    await banco.auth.signOut();
+
+    document.getElementById("emailLogin").value = "";
+    document.getElementById("senhaLogin").value = "";
+
+    document.getElementById("loginScreen").style.display = "flex";
+    document.getElementById("app").style.display = "none";
+}
 
 function moeda(valor){
     return Number(valor || 0).toLocaleString("pt-BR", {
@@ -754,7 +857,7 @@ async function carregarGastos(){
             <div class="item">
                 <div class="item-top">
                     <div>
-                        <div class="produto">${gasto.produto}</div>
+                        <div class="produto">${gasto.produto || "-"}</div>
                         <span class="tag">${categoria}</span>
                     </div>
                     <div class="total">${moeda(gasto.valor_total)}</div>
@@ -784,8 +887,8 @@ async function carregarGastos(){
                 ` : ""}
 
                 <div class="acoes">
-                    <button class="btn-editar" onclick="abrirEditar(${gasto.id})">Editar</button>
-                    <button class="btn-excluir" onclick="excluirGasto(${gasto.id})">Excluir</button>
+                    <button class="btn-editar" onclick="abrirEditar(${gasto.id})">EDITAR</button>
+                    <button class="btn-excluir" onclick="excluirGasto(${gasto.id})">EXCLUIR</button>
                 </div>
             </div>
         `;
@@ -917,7 +1020,7 @@ async function iniciar(){
     await carregarGastos();
 }
 
-iniciar();
+verificarSessao();
 </script>
 
 </body>
