@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Controle da Obra</title>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+body{
+    font-family: Arial, sans-serif;
+    max-width: 1200px;
+    margin: 20px auto;
+    padding: 20px;
+    background:#f5f5f5;
+}
+
+h1{
+    text-align:center;
+}
+
+.card{
+    background:white;
+    padding:20px;
+    border-radius:10px;
+    margin-bottom:20px;
+    box-shadow:0 0 10px rgba(0,0,0,.1);
+}
+
+input{
+    width:100%;
+    padding:10px;
+    margin-top:10px;
+    box-sizing:border-box;
+}
+
+button{
+    margin-top:15px;
+    padding:12px;
+    width:100%;
+    border:none;
+    background:#2563eb;
+    color:white;
+    border-radius:6px;
+    cursor:pointer;
+}
+
+button:hover{
+    background:#1d4ed8;
+}
+
+table{
+    width:100%;
+    border-collapse:collapse;
+    background:white;
+}
+
+th,td{
+    border:1px solid #ddd;
+    padding:10px;
+}
+
+th{
+    background:#111827;
+    color:white;
+}
+
+.total{
+    font-size:24px;
+    font-weight:bold;
+    color:#16a34a;
+}
+</style>
+</head>
+
+<body>
+
+<h1>🏠 Controle da Obra</h1>
+
+<div class="card">
+<h2>Novo Gasto</h2>
+
+<input id="produto" placeholder="Serviço ou Produto">
+<input id="quantidade" type="number" placeholder="Quantidade">
+<input id="observacao" placeholder="Observação">
+<input id="fornecedor" placeholder="Fornecedor">
+<input id="valor" type="number" placeholder="Valor Unitário">
+
+<button onclick="salvarGasto()">Salvar Gasto</button>
+</div>
+
+<div class="card">
+<h2>Dashboard</h2>
+
+<p class="total">
+Total Gasto: R$ <span id="total">0,00</span>
+</p>
+
+<table>
+<thead>
+<tr>
+<th>Produto</th>
+<th>Quantidade</th>
+<th>Observação</th>
+<th>Fornecedor</th>
+<th>Valor Unitário</th>
+<th>Total</th>
+</tr>
+</thead>
+<tbody id="lista"></tbody>
+</table>
+</div>
+
+<script>
+const supabaseUrl = "https://sncqakvwubhlckncuuea.supabase.co";
+
+const supabaseKey = "sb_publishable_4oEt-DgvoHZIlzwhlppjkQ_3NuY-UBn";
+
+const banco = window.supabase.createClient(supabaseUrl, supabaseKey);
+
+async function salvarGasto(){
+
+    const produto = document.getElementById("produto").value;
+    const quantidade = Number(document.getElementById("quantidade").value);
+    const observacao = document.getElementById("observacao").value;
+    const fornecedor = document.getElementById("fornecedor").value;
+    const valorUnitario = Number(document.getElementById("valor").value);
+
+    if(!produto || !quantidade || !valorUnitario){
+        alert("Preencha produto, quantidade e valor unitário.");
+        return;
+    }
+
+    const valorTotal = quantidade * valorUnitario;
+
+    const { error } = await banco
+        .from("gastos")
+        .insert([
+            {
+                produto: produto,
+                quantidade: quantidade,
+                observacao: observacao,
+                fornecedor: fornecedor,
+                valor_unitario: valorUnitario,
+                valor_total: valorTotal,
+                data_gasto: new Date().toISOString().split("T")[0]
+            }
+        ]);
+
+    if(error){
+        alert("Erro ao salvar: " + error.message);
+        console.log(error);
+        return;
+    }
+
+    alert("Gasto salvo na nuvem!");
+
+    document.getElementById("produto").value="";
+    document.getElementById("quantidade").value="";
+    document.getElementById("observacao").value="";
+    document.getElementById("fornecedor").value="";
+    document.getElementById("valor").value="";
+
+    carregarGastos();
+}
+
+async function carregarGastos(){
+
+    const { data, error } = await banco
+        .from("gastos")
+        .select("*")
+        .order("id", { ascending: false });
+
+    if(error){
+        alert("Erro ao carregar: " + error.message);
+        console.log(error);
+        return;
+    }
+
+    const lista = document.getElementById("lista");
+    lista.innerHTML = "";
+
+    let soma = 0;
+
+    data.forEach(gasto => {
+
+        soma += Number(gasto.valor_total);
+
+        lista.innerHTML += `
+        <tr>
+            <td>${gasto.produto}</td>
+            <td>${gasto.quantidade}</td>
+            <td>${gasto.observacao || ""}</td>
+            <td>${gasto.fornecedor}</td>
+            <td>R$ ${Number(gasto.valor_unitario).toFixed(2)}</td>
+            <td>R$ ${Number(gasto.valor_total).toFixed(2)}</td>
+        </tr>
+        `;
+    });
+
+    document.getElementById("total").innerText = soma.toFixed(2);
+}
+
+carregarGastos();
+</script>
+
+</body>
+</html>
