@@ -264,6 +264,12 @@ button{
     white-space:nowrap;
 }
 
+.info{
+    color:#6b7280;
+    font-size:14px;
+    margin-top:6px;
+}
+
 .detalhes{
     display:grid;
     grid-template-columns:repeat(3,1fr);
@@ -445,7 +451,8 @@ button,
 
 <div id="loginScreen" class="login-screen">
     <div class="login-box">
-        <h1></h1>
+        <h1>GESTÃO DA OBRA</h1>
+        <p>Entre com seu e-mail e senha para acessar o sistema.</p>
 
         <div class="campo">
             <label>E-mail</label>
@@ -544,6 +551,12 @@ button,
                 Modo edição
             </label>
         </div>
+
+        <div class="campo">
+            <label>Pesquisar</label>
+            <input id="pesquisa" type="text" placeholder="Digite qualquer palavra para buscar...">
+        </div>
+
         <div class="lista" id="lista"></div>
     </div>
 </div>
@@ -622,6 +635,7 @@ const banco = window.supabase.createClient(supabaseUrl, supabaseKey);
 let grafico;
 let gastosAtuais = [];
 let categoriasAtuais = [];
+let termoPesquisa = "";
 
 async function verificarSessao(){
     const { data } = await banco.auth.getSession();
@@ -690,6 +704,11 @@ function atualizarPreview(){
 
 document.getElementById("quantidade").addEventListener("input", atualizarPreview);
 document.getElementById("valor").addEventListener("input", atualizarPreview);
+
+document.getElementById("pesquisa").addEventListener("input", function(){
+    termoPesquisa = this.value.toLowerCase().trim();
+    renderizarGastos();
+});
 
 document.getElementById("categoria").addEventListener("change", function(){
     if(this.value === "__nova__"){
@@ -840,14 +859,31 @@ async function carregarGastos(){
     }
 
     gastosAtuais = data || [];
+    renderizarGastos();
+}
 
+function renderizarGastos(){
     const lista = document.getElementById("lista");
     lista.innerHTML = "";
 
     let totalGeral = 0;
     let porCategoria = {};
 
-    gastosAtuais.forEach(gasto=>{
+    const gastosFiltrados = gastosAtuais.filter(gasto => {
+        const texto = `
+            ${gasto.produto || ""}
+            ${gasto.categoria || ""}
+            ${gasto.fornecedor || ""}
+            ${gasto.observacao || ""}
+            ${gasto.quantidade || ""}
+            ${gasto.valor_unitario || ""}
+            ${gasto.valor_total || ""}
+        `.toLowerCase();
+
+        return texto.includes(termoPesquisa);
+    });
+
+    gastosFiltrados.forEach(gasto=>{
         totalGeral += Number(gasto.valor_total || 0);
 
         const categoria = gasto.categoria || "Sem categoria";
@@ -893,6 +929,15 @@ async function carregarGastos(){
             </div>
         `;
     });
+
+    if(gastosFiltrados.length === 0){
+        lista.innerHTML = `
+            <div class="item">
+                <div class="produto">NENHUM GASTO ENCONTRADO</div>
+                <div class="info">Tente pesquisar por outro termo.</div>
+            </div>
+        `;
+    }
 
     document.getElementById("totalGeral").innerText = moeda(totalGeral);
 
